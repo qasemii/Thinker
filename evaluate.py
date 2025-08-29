@@ -23,8 +23,8 @@ import transformers
 from utils import evaluate
 from utils import get_alphabet_choice
 from utils import get_yes_no
-from utils import parse_math_boxed
-from utils import parse_number
+from math_utils import parse_math_boxed
+from math_utils import parse_number
 from vllm import LLM
 from vllm import SamplingParams
 from vllm.lora.request import LoRARequest
