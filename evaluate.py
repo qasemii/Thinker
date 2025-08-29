@@ -96,7 +96,7 @@ if __name__ == "__main__":
             download_dir=args.model_dir,
             tensor_parallel_size=1)
 
-  if adapter_path:
+  if os.path.exists(adapter_path):
     lora_request = LoRARequest("finetined_adapter", 1, adapter_path)
   else:
     lora_request = None
