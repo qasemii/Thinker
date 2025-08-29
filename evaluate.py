@@ -79,7 +79,7 @@ if __name__ == "__main__":
   else:
     raise ValueError(f"Unsupported model: {args.model}")
 
-  with open(f"./test_data/{args.task}_test.json", "r") as f:
+  with open(f"./data/test_data/{args.task}_test.json", "r") as f:
     test_samples = json.load(f)
 
   prompts = [fr_template.format(question=i["question"], answer="")

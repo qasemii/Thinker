@@ -139,7 +139,7 @@ if __name__ == '__main__':
   )
 
   model = peft.get_peft_model(model, lora_config)
-  teacher_data_file = f'./training_data/{args.task}.json'
+  teacher_data_file = f'./data/training_data/{args.task}.json'
   print(teacher_data_file)
   with open(teacher_data_file, 'r') as f:
     data = json.load(f)
