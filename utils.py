@@ -26,32 +26,32 @@ import vertexai
 from vertexai.generative_models import GenerationConfig
 from vertexai.generative_models import GenerativeModel
 
-# setup vertexai using your own credentials
-project_id = ""  # fill here
-location = ""   # fill here
-vertexai.init(project=project_id, location=location)
-pro_model = GenerativeModel(model_name="gemini-1.5-pro-001")
-flash_model = GenerativeModel(model_name="gemini-1.5-flash-001")
+# # setup vertexai using your own credentials
+# project_id = ""  # fill here
+# location = ""   # fill here
+# vertexai.init(project=project_id, location=location)
+# pro_model = GenerativeModel(model_name="gemini-1.5-pro-001")
+# flash_model = GenerativeModel(model_name="gemini-1.5-flash-001")
 
 
-@ratelimit.sleep_and_retry
-@backoff.on_exception(backoff.expo,
-                      google_exceptions.ResourceExhausted, max_tries=10)
-@ratelimit.limits(calls=60, period=60)
-def get_gemini_output(prompt, model="flash"):
-  """Get Gemini output."""
-  if model == "flash":
-    gemini = flash_model
-  elif model == "pro":
-    gemini = pro_model
-  else:
-    raise ValueError(f"Unsupported model: {model}")
-  output = gemini.generate_content(prompt,
-                                   generation_config=GenerationConfig(
-                                       temperature=0.8,
-                                       max_output_tokens=1000,
-                                   )).text
-  return output
+# @ratelimit.sleep_and_retry
+# @backoff.on_exception(backoff.expo,
+#                       google_exceptions.ResourceExhausted, max_tries=10)
+# @ratelimit.limits(calls=60, period=60)
+# def get_gemini_output(prompt, model="flash"):
+#   """Get Gemini output."""
+#   if model == "flash":
+#     gemini = flash_model
+#   elif model == "pro":
+#     gemini = pro_model
+#   else:
+#     raise ValueError(f"Unsupported model: {model}")
+#   output = gemini.generate_content(prompt,
+#                                    generation_config=GenerationConfig(
+#                                        temperature=0.8,
+#                                        max_output_tokens=1000,
+#                                    )).text
+#   return output
 
 
 def get_token_counts(prompt):
