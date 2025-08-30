@@ -17,23 +17,17 @@
 
 import argparse
 import json
+from openai import OpenAI
 
-from prompt import gen_reasoning_prompt
+from prompt import options
+from prompt import reasoning_prompt
+
 from tqdm import tqdm
 from utils import get_alphabet_choice
-from utils import parse_math_boxed
-from utils import parse_number
+from math_utils import parse_math_boxed
+from math_utils import parse_number
 
 def generate_reasoning(prompt, client, model="meta-llama/Llama-3.3-70B-Instruct-Turbo"):
-
-
-    generation_configs = {
-        "temperature": 0.8,
-        # "top_p": 1,
-        # "frequency_penalty": 0,
-        # "presence_penalty": 0,
-        "max_tokens": 1000,
-    }
 
     response = client.chat.completions.create(
           model=model,
@@ -41,7 +35,8 @@ def generate_reasoning(prompt, client, model="meta-llama/Llama-3.3-70B-Instruct-
               {"role": "system", "content": "You are a helpful assistant that excels at explaining commonsense reasoning."},
               {"role": "user", "content": prompt}
           ],
-          **generation_configs
+          temperature=0.8,
+          max_tokens=1000,
       )
 
     reasoning = response.choices[0].message.content.strip()
@@ -61,11 +56,11 @@ if __name__ == "__main__":
         base_url="https://api.together.xyz/v1",
   )
 
-  with open(f"./training_data/{args.task}.json", "r") as f:
+  with open(f"./data/training_data/{args.task}.json", "r") as f:
     dataset = json.load(f)
   
   if args.max_examples:
-    dataset = dataset.select(range(args.max_examples))
+    dataset = dataset[:args.max_examples]
 
   is_math = False
   if args.task == "SQA":
@@ -81,22 +76,25 @@ if __name__ == "__main__":
   else:
     raise ValueError(f"Unsupported task: {args.task}")
 
+
   # forward reasoning generation
   results = []
   for i, example in enumerate(tqdm(dataset, desc="Generating reasoning ...")):
-    try:
-      tmp = {}
-      tmp["question"] = sample["question"]
-      tmp["gold_answer"] = sample["gold_answer"]
+    tmp = {}
+    tmp["question"] = example["question"]
+    tmp["gold_answer"] = example["gold_answer"]
+    
+    tmp["reasonings"] = {}
+        
+    # reasoning for incorrect answers
+    for o in options[args.task]:
+        is_correct = "correct" if o == tmp["gold_answer"] else "incorrect"
+        generation_prompt = example["question"] + reasoning_prompt.format(option=o, is_correct=is_correct)
+        reasoning = generate_reasoning(generation_prompt, client)
+        tmp["reasonings"][o] = reasoning
+        
+    results.append(tmp)
 
-      prompt = sample["question"] + "The correct answer is {tmp["gold_answer"]}, why?"
-      forward_reasoning = get_gemini_output(prompt, model="pro")
-      tmp["forward_reasoning"] = forward_reasoning
-      tmp["forward_pred"] = answer_extraction(forward_reasoning)
-      results.append(tmp)
-    except Exception as e:  # pylint: disable=broad-exception-caught
-      print(f"error in forward reasoning generation: {e}")
-      continue
-
+  
   with open(f"./training_data/{args.task}.json", "w") as f:
     json.dump(results, f)
