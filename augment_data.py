@@ -96,5 +96,5 @@ if __name__ == "__main__":
     results.append(tmp)
 
   
-  with open(f"./training_data/{args.task}.json", "w") as f:
+  with open(f"./data/training_data/{args.task}.json", "w") as f:
     json.dump(results, f)
