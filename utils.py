@@ -18,13 +18,13 @@
 import re
 
 import backoff
-import google.api_core.exceptions as google_exceptions
+# import google.api_core.exceptions as google_exceptions
 from math_utils import is_math_correct
 import ratelimit
 import torch
-import vertexai
-from vertexai.generative_models import GenerationConfig
-from vertexai.generative_models import GenerativeModel
+# import vertexai
+# from vertexai.generative_models import GenerationConfig
+# from vertexai.generative_models import GenerativeModel
 
 # # setup vertexai using your own credentials
 # project_id = ""  # fill here
