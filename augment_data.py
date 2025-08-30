@@ -13,114 +13,90 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Augment dataset with backward reasoning."""
+"""Augment dataset with forward reasoning."""
 
 import argparse
 import json
 
-from prompt import consistency_check_prompt_math
-from prompt import consistency_check_prompt_mcq
 from prompt import gen_reasoning_prompt
-from prompt import icl_samples
-from prompt import prompt_for_backward_question
-import tqdm
+from tqdm import tqdm
 from utils import get_alphabet_choice
-from utils import get_gemini_output
-from utils import get_true_false
-from utils import get_yes_no
 from utils import parse_math_boxed
 from utils import parse_number
-from utils import remove_backward_answer
+
+def generate_reasoning(prompt, client, model="meta-llama/Llama-3.3-70B-Instruct-Turbo"):
+
+
+    generation_configs = {
+        "temperature": 0.8,
+        # "top_p": 1,
+        # "frequency_penalty": 0,
+        # "presence_penalty": 0,
+        "max_tokens": 1000,
+    }
+
+    response = client.chat.completions.create(
+          model=model,
+          messages=[
+              {"role": "system", "content": "You are a helpful assistant that excels at explaining commonsense reasoning."},
+              {"role": "user", "content": prompt}
+          ],
+          **generation_configs
+      )
+
+    reasoning = response.choices[0].message.content.strip()
+    
+    return reasoning
 
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--task", default="SQA", type=str)
+  parser.add_argument('--max_examples', default=None, type=int)
   args = parser.parse_args()
 
+  api_key = "tgp_v1_Hlyiw1xzK5t5UP_If943fjZI7GAbGDHySHvMRv-rKg8"  # Reza
+  client = OpenAI(
+        api_key = api_key,
+        base_url="https://api.together.xyz/v1",
+  )
+
   with open(f"./training_data/{args.task}.json", "r") as f:
-    train_samples = json.load(f)
+    dataset = json.load(f)
+  
+  if args.max_examples:
+    dataset = dataset.select(range(args.max_examples))
 
   is_math = False
   if args.task == "SQA":
     answer_extraction = get_yes_no
-    consistency_check_prompt = consistency_check_prompt_mcq
   elif args.task in ["ANLI", "ARC", "Date", "CSQA", "ESNLI"]:
     answer_extraction = get_alphabet_choice
-    consistency_check_prompt = consistency_check_prompt_mcq
   elif args.task in ["GSM8K", "GSM8K-Rev"]:
     answer_extraction = parse_number
-    consistency_check_prompt = consistency_check_prompt_math
     is_math = True
   elif args.task in ["TabMWP", "MATH"]:
     answer_extraction = parse_math_boxed
-    consistency_check_prompt = consistency_check_prompt_math
     is_math = True
   else:
     raise ValueError(f"Unsupported task: {args.task}")
 
-  # backward question generation
-  print("Generating backward question...")
+  # forward reasoning generation
   results = []
-  for sample in tqdm(train_samples[len(results):]):
+  for i, example in enumerate(tqdm(dataset, desc="Generating reasoning ...")):
     try:
       tmp = {}
       tmp["question"] = sample["question"]
       tmp["gold_answer"] = sample["gold_answer"]
 
-      q = f"{sample['question']} The correct answer is {sample['gold_answer']}."
-
-      prompt = prompt_for_backward_question.format(
-          icl_samples=icl_samples[args.task],
-          input_question=q)
-      backward_question = get_gemini_output(prompt, model="pro")
-      tmp["backward_question"] = remove_backward_answer(backward_question)
-      results.append(tmp)
-    except Exception as e:  # pylint: disable=broad-exception-caught
-      print(f"error in backward question generation: {e}")
-      continue
-
-  # forward reasoning generation
-  print("Generating forward reasoning...")
-  for i in tqdm.tqdm(results):
-    try:
-      prompt = i["question"] + gen_reasoning_prompt[args.task]
+      prompt = sample["question"] + "The correct answer is {tmp["gold_answer"]}, why?"
       forward_reasoning = get_gemini_output(prompt, model="pro")
-      i["forward_reasoning"] = forward_reasoning
-      i["forward_pred"] = answer_extraction(forward_reasoning)
+      tmp["forward_reasoning"] = forward_reasoning
+      tmp["forward_pred"] = answer_extraction(forward_reasoning)
+      results.append(tmp)
     except Exception as e:  # pylint: disable=broad-exception-caught
       print(f"error in forward reasoning generation: {e}")
       continue
 
-    # backward reasoning generation
-    print("Generating backward reasoning...")
-    for i in tqdm.tqdm(results):
-      try:
-        prompt = i["backward_question"] + gen_reasoning_prompt[args.task]
-        backward_reasoning = get_gemini_output(prompt, model="pro")
-        i["backward_reasoning"] = backward_reasoning
-        i["backward_pred"] = answer_extraction(backward_reasoning)
-      except Exception as e:  # pylint: disable=broad-exception-caught
-        print(f"error in backward reasoning generation: {e}")
-        continue
-
-    # Consistency check
-    print("Validating the augmented data...")
-    for i in tqdm.tqdm(results):
-      try:
-        prompt = consistency_check_prompt.format(
-            question=i["question"],
-            gold_answer=i["gold_answer"],
-            backward_question=i["backward_question"],
-            backward_pred=i["backward_pred"]
-        )
-        consistency = get_gemini_output(prompt, model="pro")
-        i["consistency_reasoning"] = consistency
-        i["is_consistent"] = get_true_false(consistency)
-      except Exception as e:  # pylint: disable=broad-exception-caught
-        print(e)
-        i["consistency_reasoning"] = "N/A"
-        i["is_consistent"] = "false"
-
-    with open(f"./training_data/{args.task}.json", "w") as f:
-      json.dump(results, f)
+  with open(f"./training_data/{args.task}.json", "w") as f:
+    json.dump(results, f)
