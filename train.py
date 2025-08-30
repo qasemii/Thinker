@@ -37,14 +37,19 @@ class BackwardDataset(Dataset):
 
   def __getitem__(self, idx):
     item = self.data[idx]
+
+    cr_reasoning = cr_template.format(question=item['question'],
+                                      reasoning=item['reasonings'][item['gold_answer']])
+
+    reasonings = dict(item['reasonings'])  # shallow copy
+    reasonings.pop(item['gold_answer'], None)
+
+    ir_reasoning = ir_template.format(question=item['question'],
+                                      reasoning=" ".join(reasonings.values()))
+
     return {
-        'FR': fr_template.format(question=item['question'],
-                                 answer=item['forward_reasoning']),
-        'BQ': bq_template.format(question=item['question'],
-                                 ans=item['gold_answer'],
-                                 backward_question=item['backward_question']),
-        BR'': br_template.format(backward_question=item['backward_question'],
-                                 backward_reasoning=item['backward_reasoning'])
+        'CR': cr_reasoning,
+        'IR': ir_reasoning
     }
 
 
@@ -59,7 +64,7 @@ class BackwardDataCollator:
 
   def __call__(self, features):
     new_feat = {}
-    for key in ['FR', 'BQ', 'BR']:
+    for key in ['CR', 'IR']:
       new_feat[f'{key}'] = {}
       texts = [f[key] for f in features]
       inputs = self.tokenizerr(texts,
@@ -77,16 +82,15 @@ class BackwardTrainer(transformers.Trainer):
   """Collate the data for training."""
 
   def compute_loss(self, model_instance, inputs):
-    loss1 = model_instance(**inputs['FR']).loss
-    loss2 = model_instance(**inputs['BQ']).loss
-    loss3 = model_instance(**inputs['BR']).loss
-    return (loss1 + loss2 + loss3) / 3
+    loss1 = model_instance(**inputs['CR']).loss
+    loss2 = model_instance(**inputs['IR']).loss
+    return (loss1 + loss2) / 2
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument('--n', default=0, type=int)
-  parser.add_argument('--task', default='ANLI', type=str)
-  parser.add_argument('--model', default='mistral', type=str)
+  parser.add_argument('--task', default='ARC', type=str)
+  parser.add_argument('--model', default='gemma-7b', type=str)
   parser.add_argument('--model_dir', default='', type=str)
 
   args = parser.parse_args()
@@ -101,13 +105,11 @@ if __name__ == '__main__':
     raise ValueError(f'Unsupported model: {args.model}')
 
   if 'mistral' in args.model:
-    fr_template = """<s>[INST] Answer the following question:\n### Question: {question} [/INST] ### Answer: {answer}</s>"""
-    bq_template = """<s>[INST] Generate the inverse question based on the following seed question and its answer:\n### Seed Question: {question} The correct answer is ({ans}). [/INST] ### Inverse Question: {backward_question}</s>"""
-    br_template = """<s>[INST] Answer the backward question:\n### Question: {backward_question} [/INST] ### Answer: {backward_reasoning}</s>"""
+    cr_template = """<s>[INST] Answer the following question:\n### Question: {question} [/INST] ### Answer: {reasoning}</s>"""
+    ir_template = """<s>[INST] Identify the incorrect options and explain briefly why each one is wrong: \n### Question: {question} [/INST] ### Answer: {reasoning}</s>"""
   elif 'gemma' in args.model:
-    fr_template = """<bos><start_of_turn>user\nAnswer the following question:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {answer}<eos>"""
-    bq_template = """<bos><start_of_turn>user\nGenerate the inverse question based on the following seed question and its answer:\n### Seed Question: {question} The correct answer is ({ans}).<end_of_turn>\n<start_of_turn>model\n### Inverse Question: {backward_question}<end_of_turn><eos>"""
-    br_template = """<bos><start_of_turn>user\nAnswer the backward question:\n### Question: {backward_question}<end_of_turn>\n<start_of_turn>model\n### Answer: {backward_reasoning}<eos>"""
+    cr_template = """<bos><start_of_turn>user\nAnswer the following question:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning}<eos>"""
+    ir_template = """<bos><start_of_turn>user\nIdentify the incorrect options and explain briefly why each one is wrong:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning}<end_of_turn><eos>"""
 
   tokenizer = transformers.AutoTokenizer.from_pretrained(
       base_model,
@@ -144,14 +146,8 @@ if __name__ == '__main__':
   with open(teacher_data_file, 'r') as f:
     data = json.load(f)
 
-  num_samples = 0
-  training_data = []
-  for sample in data:
-    if sample['forward_pred'] == sample['gold_answer']:
-      training_data.append(sample)
-      num_samples += 1
-    if args.n and (num_samples / len(data)) >= (args.n / 100):
-      break
+  num_samples = int(args.n / 100) * len(data)
+  training_data = data[:num_samples]
 
   print(f'Using {args.n}% of data. ({num_samples}/{len(data)})')
   print(len(training_data))
