@@ -81,7 +81,7 @@ class BackwardDataCollator:
 class BackwardTrainer(transformers.Trainer):
   """Collate the data for training."""
 
-  def compute_loss(self, model_instance, inputs):
+  def compute_loss(self, model_instance, inputs, **kwargs):
     loss1 = model_instance(**inputs['CR']).loss
     loss2 = model_instance(**inputs['IR']).loss
     return (loss1 + loss2) / 2
