@@ -36,4 +36,5 @@ options = {
     "ARC": ["A", "B", "C", "D"],
     "ANLI": ["A", "B", "C"],
     "Date": ["A", "B", "C", "D", "E", "F"],
+    "MCGSM8K": ["A", "B", "C", "D"]
 }
