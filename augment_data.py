@@ -65,7 +65,7 @@ if __name__ == "__main__":
   is_math = False
   if args.task == "SQA":
     answer_extraction = get_yes_no
-  elif args.task in ["ANLI", "ARC", "Date", "CSQA", "ESNLI"]:
+  elif args.task in ["ANLI", "ARC", "Date", "CSQA", "ESNLI", "MCGSM8K"]:
     answer_extraction = get_alphabet_choice
   elif args.task in ["GSM8K", "GSM8K-Rev"]:
     answer_extraction = parse_number
