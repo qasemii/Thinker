@@ -97,6 +97,7 @@ if __name__ == "__main__":
             tensor_parallel_size=1)
 
   if os.path.exists(adapter_path):
+    print(f"Loading lora adapter from {adapter_path}")
     lora_request = LoRARequest("finetined_adapter", 1, adapter_path)
   else:
     lora_request = None
@@ -109,7 +110,7 @@ if __name__ == "__main__":
   is_math = False
   if args.task in ["SQA", "BoolQ"]:
     answer_extraction = get_yes_no
-  elif args.task in ["ANLI", "ARC", "Date", "CSQA", "OBQA", "ESNLI"]:
+  elif args.task in ["ANLI", "ARC", "Date", "CSQA", "OBQA", "ESNLI", "MCGSM8K"]:
     answer_extraction = get_alphabet_choice
   elif args.task in ["GSM8K", "GSM8K-Rev"]:
     answer_extraction = parse_number
