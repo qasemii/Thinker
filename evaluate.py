@@ -46,6 +46,8 @@ if __name__ == "__main__":
     base_model = "google/gemma-2b-it"
   elif args.model == "gemma-7b":
     base_model = "google/gemma-7b-it"
+  elif args.model == 'gemma-3-4b':
+    base_model = 'google/gemma-3-4b-it'
   else:
     raise ValueError(f"Unsupported model: {args.model}")
 
