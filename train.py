@@ -45,7 +45,8 @@ class BackwardDataset(Dataset):
     reasonings.pop(item['gold_answer'], None)
 
     ir_reasoning = ir_template.format(question=item['question'],
-                                      reasoning=" ".join(reasonings.values()))
+                                      reasoning=" ".join(reasonings.values()),
+                                      gold_answer=item['gold_answer'])
 
     return {
         'CR': cr_reasoning,
@@ -101,15 +102,17 @@ if __name__ == '__main__':
     base_model = 'google/gemma-2b-it'
   elif args.model == 'gemma-7b':
     base_model = 'google/gemma-7b-it'
+  elif args.model == 'gemma-3-4b':
+    base_model = 'google/gemma-3-4b-it'
   else:
     raise ValueError(f'Unsupported model: {args.model}')
 
   if 'mistral' in args.model:
     cr_template = """<s>[INST] Answer the following question:\n### Question: {question} [/INST] ### Answer: {reasoning}</s>"""
-    ir_template = """<s>[INST] Identify the incorrect options and explain briefly why each one is wrong: \n### Question: {question} [/INST] ### Answer: {reasoning}</s>"""
+    ir_template = """<s>[INST] Identify the incorrect options to reach the correct answers: \n### Question: {question} [/INST] ### Answer: {reasoning} Therefore the correct answer is option ({gold_answer}).</s>"""
   elif 'gemma' in args.model:
     cr_template = """<bos><start_of_turn>user\nAnswer the following question:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning}<eos>"""
-    ir_template = """<bos><start_of_turn>user\nIdentify the incorrect options and explain briefly why each one is wrong:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning}<end_of_turn><eos>"""
+    ir_template = """<bos><start_of_turn>user\nIdentify the incorrect options to reach the correct answers:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning} Therefore the correct answer is option ({gold_answer}).<end_of_turn><eos>"""
 
   tokenizer = transformers.AutoTokenizer.from_pretrained(
       base_model,
