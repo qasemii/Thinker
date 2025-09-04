@@ -104,6 +104,8 @@ if __name__ == '__main__':
     base_model = 'google/gemma-7b-it'
   elif args.model == 'gemma-3-4b':
     base_model = 'google/gemma-3-4b-it'
+  elif args.model == 'olmo-2-7b':
+    base_model = 'allenai/OLMo-2-1124-7B'
   else:
     raise ValueError(f'Unsupported model: {args.model}')
 
