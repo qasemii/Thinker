@@ -74,12 +74,19 @@ if __name__ == "__main__":
   tokenizer.add_eos_token = False
 
   if "mistral" in args.model:
-    fr_template = """<s>[INST] Answer the following question:\n### Question:
-    {question} [/INST] ### Answer: {answer}"""
+    fr_template = """<s>[INST] Answer the following question:\n
+    ### Question: {question} [/INST] ### Answer: {answer}"""
   elif "gemma" in args.model:
     fr_template = """<bos><start_of_turn>user\nAnswer the following question:\n
     ### Question: {question}<end_of_turn>\n<start_of_turn>model\n
     ### Answer: {answer}"""
+  elif "olmo" in args.model:
+    fr_template = """<|endoftext|><|user|>\nAnswer the following question:\n
+    ### Question: {question}\n<|assistant|>\n
+    ### Answer: {answer}<|endoftext|>"""
+    
+
+
   else:
     raise ValueError(f"Unsupported model: {args.model}")
 
