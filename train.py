@@ -96,18 +96,18 @@ if __name__ == '__main__':
 
   args = parser.parse_args()
 
-  if args.model == 'mistral-7b':
-    base_model = 'mistralai/Mistral-7B-Instruct-v0.3'
-  elif args.model == 'gemma-2b':
-    base_model = 'google/gemma-2b-it'
-  elif args.model == 'gemma-7b':
-    base_model = 'google/gemma-7b-it'
-  elif args.model == 'gemma-3-4b':
-    base_model = 'google/gemma-3-4b-it'
+  if args.model == "mistral-7b":
+    base_model = "mistralai/Mistral-7B-Instruct-v0.3"
+  elif "gemma" in args.model:
+    base_model = f"google/{args.model}-it"
   elif args.model == 'olmo-2-7b':
     base_model = 'allenai/OLMo-2-1124-7B'
+  elif args.model == 'qwen-2.5-7b':
+    base_model = 'Qwen/Qwen2.5-7B-Instruct'
+  elif args.model == 'qwen-3-4b':
+    base_model = 'Qwen/Qwen3-4B-Instruct-2507'
   else:
-    raise ValueError(f'Unsupported model: {args.model}')
+    raise ValueError(f"Unsupported model: {args.model}")
 
   if 'mistral' in args.model:
     cr_template = """<s>[INST] Answer the following question:\n### Question: {question} [/INST] ### Answer: {reasoning}</s>"""
@@ -115,6 +115,11 @@ if __name__ == '__main__':
   elif 'gemma' in args.model:
     cr_template = """<bos><start_of_turn>user\nAnswer the following question:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning}<eos>"""
     ir_template = """<bos><start_of_turn>user\nIdentify the incorrect options to reach the correct answers:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning} Therefore the correct answer is option ({gold_answer}).<end_of_turn><eos>"""
+  elif 'qwen' in args.model:
+    # cr_template = """<bos><start_of_turn>user\nAnswer the following question:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning}<eos>"""
+    # ir_template = """<bos><start_of_turn>user\nIdentify the incorrect options to reach the correct answers:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning} Therefore the correct answer is option ({gold_answer}).<end_of_turn><eos>"""
+    pass
+
 
   tokenizer = transformers.AutoTokenizer.from_pretrained(
       base_model,

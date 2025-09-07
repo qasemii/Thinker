@@ -42,14 +42,14 @@ if __name__ == "__main__":
 
   if args.model == "mistral-7b":
     base_model = "mistralai/Mistral-7B-Instruct-v0.3"
-  elif args.model == "gemma-2b":
-    base_model = "google/gemma-2b-it"
-  elif args.model == "gemma-7b":
-    base_model = "google/gemma-7b-it"
-  elif args.model == 'gemma-3-4b':
-    base_model = 'google/gemma-3-4b-it'
+  elif "gemma" in args.model:
+    base_model = f"google/{args.model}-it"
   elif args.model == 'olmo-2-7b':
     base_model = 'allenai/OLMo-2-1124-7B'
+  elif args.model == 'qwen-2.5-7b':
+    base_model = 'Qwen/Qwen2.5-7B-Instruct'
+  elif args.model == 'qwen-3-4b':
+    base_model = 'Qwen/Qwen3-4B-Instruct-2507'
   else:
     raise ValueError(f"Unsupported model: {args.model}")
 
@@ -75,7 +75,8 @@ if __name__ == "__main__":
 
   if "mistral" in args.model:
     fr_template = """<s>[INST] Answer the following question:\n
-    ### Question: {question} [/INST] ### Answer: {answer}"""
+    ### Question: {question} [/INST] \n
+    ### Answer: {answer}"""
   elif "gemma" in args.model:
     fr_template = """<bos><start_of_turn>user\nAnswer the following question:\n
     ### Question: {question}<end_of_turn>\n<start_of_turn>model\n
@@ -84,7 +85,10 @@ if __name__ == "__main__":
     fr_template = """<|endoftext|><|user|>\nAnswer the following question:\n
     ### Question: {question}\n<|assistant|>\n
     ### Answer: {answer}<|endoftext|>"""
-    
+  elif "qwen" in args.model:
+    fr_template = """<|im_start|>user\nAnswer the following question:\n
+    ### Question: {question}<|im_end|>\n<|im_start|>assistant\n
+    ### Answer: {answer}<|im_end|>"""
 
 
   else:
@@ -106,6 +110,7 @@ if __name__ == "__main__":
             max_lora_rank=32,
             download_dir=args.model_dir,
             tensor_parallel_size=1)
+            # gpu_memory_utilization=0.8)
 
   if os.path.exists(adapter_path):
     print(f"Loading lora adapter from {adapter_path}")
