@@ -18,6 +18,7 @@
 import argparse
 import json
 import os
+from huggingface_hub import login
 
 import transformers
 from utils import evaluate
@@ -42,6 +43,8 @@ if __name__ == "__main__":
 
   if args.model == "mistral-7b":
     base_model = "mistralai/Mistral-7B-Instruct-v0.3"
+  elif args.model == "llama-3.2-1b":
+    base_model = "meta-llama/Llama-3.2-1B-Instruct"
   elif "gemma" in args.model:
     base_model = f"google/{args.model}-it"
   elif args.model == 'olmo-2-7b':
@@ -73,32 +76,17 @@ if __name__ == "__main__":
   tokenizer.add_bos_token = False
   tokenizer.add_eos_token = False
 
-  if "mistral" in args.model:
-    fr_template = """<s>[INST] Answer the following question:\n
-    ### Question: {question} [/INST] \n
-    ### Answer: {answer}"""
-  elif "gemma" in args.model:
-    fr_template = """<bos><start_of_turn>user\nAnswer the following question:\n
-    ### Question: {question}<end_of_turn>\n<start_of_turn>model\n
-    ### Answer: {answer}"""
-  elif "olmo" in args.model:
-    fr_template = """<|endoftext|><|user|>\nAnswer the following question:\n
-    ### Question: {question}\n<|assistant|>\n
-    ### Answer: {answer}<|endoftext|>"""
-  elif "qwen" in args.model:
-    fr_template = """<|im_start|>user\nAnswer the following question:\n
-    ### Question: {question}<|im_end|>\n<|im_start|>assistant\n
-    ### Answer: {answer}<|im_end|>"""
-
-
-  else:
-    raise ValueError(f"Unsupported model: {args.model}")
-
   with open(f"./data/test_data/{args.task}_test.json", "r") as f:
     test_samples = json.load(f)
 
-  prompts = [fr_template.format(question=i["question"], answer="")
-             for i in test_samples]
+  # Use unified chat template approach
+  def create_prompt(question):
+    messages = [
+      {"role": "user", "content": f"Answer the following question:\n### Question: {question}"}
+    ]
+    return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+
+  prompts = [create_prompt(i["question"]) for i in test_samples]
 
   sampling_params = SamplingParams(n=1,
                                    temperature=0,
@@ -110,7 +98,8 @@ if __name__ == "__main__":
             max_lora_rank=32,
             download_dir=args.model_dir,
             tensor_parallel_size=1)
-            # gpu_memory_utilization=0.8)
+            # gpu_memory_utilization=0.8,
+            # max_model_len=8192)
 
   if os.path.exists(adapter_path):
     print(f"Loading lora adapter from {adapter_path}")
