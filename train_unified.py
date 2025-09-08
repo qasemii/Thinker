@@ -40,7 +40,7 @@ class BackwardDataset(Dataset):
     item = self.data[idx]
 
     reasoning = self.template_func(question=item['question'],
-                                   reasoning=" ".join(reasonings.values()))
+                                   reasoning=" ".join(item['reasonings'].values()))
 
     return reasoning
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
   if args.model == "mistral-7b":
     base_model = "mistralai/Mistral-7B-Instruct-v0.3"
-  elif args.model == "llama-3.2-1b":
+  elif "Llama-3.2" in args.model:
     base_model = "meta-llama/Llama-3.2-1B-Instruct"
   elif "gemma" in args.model:
     base_model = f"google/{args.model}-it"
@@ -174,6 +174,6 @@ if __name__ == '__main__':
   )
 
   trainer.train()
-  save_path = f'./checkpoints/{args.model}_{args.task}_{args.n}'
+  save_path = f'./checkpoints/unified/{args.model}_{args.task}_{args.n}'
   os.makedirs(save_path, exist_ok=True)
   trainer.model.save_pretrained(save_path)
