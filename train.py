@@ -29,8 +29,10 @@ Dataset = torch.utils.data.Dataset
 
 
 class BackwardDataset(Dataset):
-  def __init__(self, ex):
+  def __init__(self, ex, cr_template_func, ir_template_func):
     self.data = ex
+    self.cr_template_func = cr_template_func
+    self.ir_template_func = ir_template_func
 
   def __len__(self):
     return len(self.data)
@@ -38,15 +40,15 @@ class BackwardDataset(Dataset):
   def __getitem__(self, idx):
     item = self.data[idx]
 
-    cr_reasoning = cr_template.format(question=item['question'],
-                                      reasoning=item['reasonings'][item['gold_answer']])
+    cr_reasoning = self.cr_template_func(question=item['question'],
+                                        reasoning=item['reasonings'][item['gold_answer']])
 
     reasonings = dict(item['reasonings'])  # shallow copy
     reasonings.pop(item['gold_answer'], None)
 
-    ir_reasoning = ir_template.format(question=item['question'],
-                                      reasoning=" ".join(reasonings.values()),
-                                      gold_answer=item['gold_answer'])
+    ir_reasoning = self.ir_template_func(question=item['question'],
+                                        reasoning=" ".join(reasonings.values()),
+                                        gold_answer=item['gold_answer'])
 
     return {
         'CR': cr_reasoning,
@@ -109,16 +111,7 @@ if __name__ == '__main__':
   else:
     raise ValueError(f"Unsupported model: {args.model}")
 
-  if 'mistral' in args.model:
-    cr_template = """<s>[INST] Answer the following question:\n### Question: {question} [/INST] ### Answer: {reasoning}</s>"""
-    ir_template = """<s>[INST] Identify the incorrect options to reach the correct answers: \n### Question: {question} [/INST] ### Answer: {reasoning} Therefore the correct answer is option ({gold_answer}).</s>"""
-  elif 'gemma' in args.model:
-    cr_template = """<bos><start_of_turn>user\nAnswer the following question:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning}<eos>"""
-    ir_template = """<bos><start_of_turn>user\nIdentify the incorrect options to reach the correct answers:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning} Therefore the correct answer is option ({gold_answer}).<end_of_turn><eos>"""
-  elif 'qwen' in args.model:
-    # cr_template = """<bos><start_of_turn>user\nAnswer the following question:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning}<eos>"""
-    # ir_template = """<bos><start_of_turn>user\nIdentify the incorrect options to reach the correct answers:\n### Question: {question}<end_of_turn>\n<start_of_turn>model\n### Answer: {reasoning} Therefore the correct answer is option ({gold_answer}).<end_of_turn><eos>"""
-    pass
+  # Unified chat template approach - will be defined after tokenizer initialization
 
 
   tokenizer = transformers.AutoTokenizer.from_pretrained(
@@ -129,6 +122,21 @@ if __name__ == '__main__':
   tokenizer.pad_token = tokenizer.eos_token
   tokenizer.add_bos_token = False
   tokenizer.add_eos_token = False
+
+  # Unified chat template functions
+  def create_cr_template(question, reasoning):
+    messages = [
+      {"role": "user", "content": f"Answer the following question:\n### Question: {question}"},
+      {"role": "assistant", "content": f"### Answer: {reasoning}"}
+    ]
+    return tokenizer.apply_chat_template(messages, tokenize=False)
+
+  def create_ir_template(question, reasoning, gold_answer):
+    messages = [
+      {"role": "user", "content": f"Identify the incorrect options to reach the correct answers:\n### Question: {question}"},
+      {"role": "assistant", "content": f"### Answer: {reasoning} Therefore the correct answer is option ({gold_answer})."}
+    ]
+    return tokenizer.apply_chat_template(messages, tokenize=False)
 
   model = transformers.AutoModelForCausalLM.from_pretrained(
       base_model,
@@ -161,7 +169,7 @@ if __name__ == '__main__':
 
   print(f'Using {args.n}% of data. ({num_samples}/{len(data)})')
   print(len(training_data))
-  dataset = BackwardDataset(training_data)
+  dataset = BackwardDataset(training_data, create_cr_template, create_ir_template)
   data_collator = BackwardDataCollator(tokenizer)
 
   lr = 5e-6 if 'mistral' in args.model else 2e-4

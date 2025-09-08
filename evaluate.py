@@ -47,8 +47,10 @@ if __name__ == "__main__":
     base_model = "meta-llama/Llama-3.2-1B-Instruct"
   elif "gemma" in args.model:
     base_model = f"google/{args.model}-it"
-  elif args.model == 'olmo-2-7b':
-    base_model = 'allenai/OLMo-2-1124-7B'
+  elif "qwen2.5" in args.model:
+    base_model = f"Qwen/{args.model}-Instruct"
+  elif args.model == 'olmo-2-1b':
+    base_model = 'allenai/OLMo-2-0425-1B-Instruct'
   elif args.model == 'qwen-2.5-7b':
     base_model = 'Qwen/Qwen2.5-7B-Instruct'
   elif args.model == 'qwen-3-4b':
