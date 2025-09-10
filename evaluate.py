@@ -43,8 +43,8 @@ if __name__ == "__main__":
 
   if args.model == "mistral-7b":
     base_model = "mistralai/Mistral-7B-Instruct-v0.3"
-  elif "Llama-3.2" in args.model:
-    base_model = "meta-llama/Llama-3.2-1B-Instruct"
+  elif "Llama-3." in args.model:
+    base_model = f"meta-llama/{args.model}-Instruct"
   elif "gemma" in args.model:
     base_model = f"google/{args.model}-it"
   elif "qwen2.5" in args.model:
@@ -79,6 +79,7 @@ if __name__ == "__main__":
   tokenizer.add_eos_token = False
 
   with open(f"./data/test_data/{args.task}_test.json", "r") as f:
+  # with open(f"./data/test_data_reordered/ARC_test_reordered.json", "r") as f:
     test_samples = json.load(f)
 
   # Use unified chat template approach
