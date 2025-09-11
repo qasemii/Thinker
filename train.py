@@ -100,8 +100,8 @@ if __name__ == '__main__':
 
   if args.model == "mistral-7b":
     base_model = "mistralai/Mistral-7B-Instruct-v0.3"
-  elif "Llama-3.2" in args.model:
-    base_model = "meta-llama/Llama-3.2-1B-Instruct"
+  elif "Llama-3." in args.model:
+    base_model = f"meta-llama/{args.model}-Instruct"
   elif "gemma" in args.model:
     base_model = f"google/{args.model}-it"
   elif "qwen2.5" in args.model:
