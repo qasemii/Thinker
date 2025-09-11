@@ -51,6 +51,8 @@ if __name__ == "__main__":
     base_model = f"Qwen/{args.model}-Instruct"
   elif args.model == 'olmo-2-1b':
     base_model = 'allenai/OLMo-2-0425-1B-Instruct'
+  elif args.model == 'olmo-7b':
+    base_model = 'allenai/OLMo-7B-Instruct'
   elif args.model == 'qwen-2.5-7b':
     base_model = 'Qwen/Qwen2.5-7B-Instruct'
   elif args.model == 'qwen-3-4b':
@@ -80,6 +82,7 @@ if __name__ == "__main__":
 
   with open(f"./data/test_data/{args.task}_test.json", "r") as f:
   # with open(f"./data/test_data_reordered/ARC_test_reordered.json", "r") as f:
+  # with open(f"./data/mmlu/anatomy.json", "r") as f:
     test_samples = json.load(f)
 
   # Use unified chat template approach
@@ -90,6 +93,7 @@ if __name__ == "__main__":
     return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
   prompts = [create_prompt(i["question"]) for i in test_samples]
+
 
   sampling_params = SamplingParams(n=1,
                                    temperature=0,
