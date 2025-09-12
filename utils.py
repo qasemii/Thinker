@@ -166,7 +166,7 @@ def generate_with_transformers(model, tokenizer, prompts, adapter_path=None, max
   model.eval()
   results = []
   
-  for prompt in prompts:
+  for prompt in tqdm(prompts):
     # Tokenize input
     inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
     if torch.cuda.is_available():
