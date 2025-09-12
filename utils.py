@@ -182,10 +182,11 @@ def generate_with_transformers(model, tokenizer, prompts, adapter_path=None, bat
     inputs = tokenizer(batch_prompts,
                        return_tensors="pt", 
                        padding=True, 
+                       padding_side='left',
                        truncation=True, 
                        max_length=2048  # Adjust based on your needs
                       )
-                      
+
     if torch.cuda.is_available():
       inputs = {k: v.to(model.device) for k, v in inputs.items()}
     
