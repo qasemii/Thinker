@@ -143,6 +143,7 @@ if __name__ == "__main__":
                            sampling_params,
                            lora_request=lora_request
                           )
+    outputs = [o.outputs[0].text for o in outputs]
 
   is_math = False
   if args.task in ["SQA", "BoolQ"]:
@@ -159,8 +160,8 @@ if __name__ == "__main__":
     raise ValueError(f"Unsupported task: {args.task}")
 
   for e, output in enumerate(outputs):
-    test_samples[e]["reasoning"] = output.outputs[0].text
-    test_samples[e]["pred"] = answer_extraction(output.outputs[0].text)
+    test_samples[e]["reasoning"] = outputs[e]
+    test_samples[e]["pred"] = answer_extraction(outputs[e])
 
   acc = evaluate(test_samples, is_math=is_math, pred_key="pred")
   print(f"accuracy on {args.task}: {acc}")
