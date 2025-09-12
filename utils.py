@@ -203,7 +203,7 @@ def generate_with_transformers(model, tokenizer, prompts, adapter_path=None, bat
     
     # Decode output
     input_length = inputs["input_ids"].shape[1]
-    for j, generated_sequence in enumerate(generated_ids):
+    for j, generated_sequence in enumerate(outputs):
         generated_text = tokenizer.decode(
             generated_sequence[input_length:], 
             skip_special_tokens=True
