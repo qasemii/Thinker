@@ -158,9 +158,7 @@ def evaluate(test_samples, pred_key="pred", is_math=False):
 def is_olmo(model_name):
   return 'olmo' in model_name.lower()
 
-def generate_with_transformers(model, tokenizer, prompts, adapter_path=None, max_new_tokens=1024, temperature=0.0):
-  """Generate text using transformers library."""
-  # Load adapter if it exists
+def generate_with_transformers(model, tokenizer, prompts, adapter_path=None, max_new_tokens=1024, temperature=0.0): 
   if adapter_path and os.path.exists(adapter_path):
     print(f"Loading LoRA adapter from {adapter_path}")
     model = PeftModel.from_pretrained(model, adapter_path)
@@ -176,22 +174,11 @@ def generate_with_transformers(model, tokenizer, prompts, adapter_path=None, max
     
     # Generate
     with torch.no_grad():
-      if temperature == 0.0:
-        # Greedy decoding
         outputs = model.generate(
           **inputs,
           max_new_tokens=max_new_tokens,
-          do_sample=False,
-          pad_token_id=tokenizer.eos_token_id,
-          eos_token_id=tokenizer.eos_token_id
-        )
-      else:
-        # Sampling
-        outputs = model.generate(
-          **inputs,
-          max_new_tokens=max_new_tokens,
-          do_sample=True,
           temperature=temperature,
+          do_sample=True,
           pad_token_id=tokenizer.eos_token_id,
           eos_token_id=tokenizer.eos_token_id
         )
@@ -200,16 +187,18 @@ def generate_with_transformers(model, tokenizer, prompts, adapter_path=None, max
     input_length = inputs["input_ids"].shape[1]
     generated_tokens = outputs[0][input_length:]
     generated_text = tokenizer.decode(generated_tokens, skip_special_tokens=True)
-    
+      
     # Create output object to match vllm format
-    class Output:
-      def __init__(self, text):
-        self.text = text
+    # class Output:
+    #   def __init__(self, text):
+    #     self.text = text
     
-    class OutputWrapper:
-      def __init__(self, text):
-        self.outputs = [Output(text)]
-    
-    results.append(OutputWrapper(generated_text))
+    # class OutputWrapper:
+    #   def __init__(self, text):
+    #     self.outputs = [Output(text)]
+    # 
+    # results.append(OutputWrapper(generated_text))
   
+    results.append(generated_text)
+
   return results
