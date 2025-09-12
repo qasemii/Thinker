@@ -203,20 +203,12 @@ def generate_with_transformers(model, tokenizer, prompts, adapter_path=None, bat
     
     # Decode output
     input_length = inputs["input_ids"].shape[1]
-    generated_tokens = outputs[0][input_length:]
-    generated_text = tokenizer.decode(generated_tokens, skip_special_tokens=True)
-      
-    # Create output object to match vllm format
-    # class Output:
-    #   def __init__(self, text):
-    #     self.text = text
-    
-    # class OutputWrapper:
-    #   def __init__(self, text):
-    #     self.outputs = [Output(text)]
-    # 
-    # results.append(OutputWrapper(generated_text))
+    for j, generated_sequence in enumerate(generated_ids):
+        generated_text = tokenizer.decode(
+            generated_sequence[input_length:], 
+            skip_special_tokens=True
+        )
+        results.append(generated_text)
   
-    results.append(generated_text)
 
   return results
