@@ -15,13 +15,22 @@
 
 """Utils for Thinker."""
 
+import argparse
+import json
+import os
+import torch
+from huggingface_hub import login
+
+import transformers
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel
+
 import re
 
 import backoff
 # import google.api_core.exceptions as google_exceptions
 from math_utils import is_math_correct
 import ratelimit
-import torch
 from tqdm import tqdm
 # import vertexai
 # from vertexai.generative_models import GenerationConfig
@@ -159,7 +168,7 @@ def evaluate(test_samples, pred_key="pred", is_math=False):
 def is_olmo(model_name):
   return 'olmo' in model_name.lower()
 
-def generate_with_transformers(model, tokenizer, prompts, adapter_path=None, max_new_tokens=1024, temperature=0.0): 
+def generate_with_transformers(model, tokenizer, prompts, adapter_path=None, batch_size=256, max_new_tokens=1024, temperature=0.0): 
   if adapter_path and os.path.exists(adapter_path):
     print(f"Loading LoRA adapter from {adapter_path}")
     model = PeftModel.from_pretrained(model, adapter_path)
@@ -167,9 +176,16 @@ def generate_with_transformers(model, tokenizer, prompts, adapter_path=None, max
   model.eval()
   results = []
   
-  for prompt in tqdm(prompts):
+  for i in tqdm(range(0, len(prompts), batch_size)):
     # Tokenize input
-    inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
+    batch_prompts = prompts[i:i+batch_size]
+    inputs = tokenizer(batch_prompts,
+                       return_tensors="pt", 
+                       padding=True, 
+                       truncation=True, 
+                       max_length=2048  # Adjust based on your needs
+                      )
+                      
     if torch.cuda.is_available():
       inputs = {k: v.to(model.device) for k, v in inputs.items()}
     
@@ -178,8 +194,8 @@ def generate_with_transformers(model, tokenizer, prompts, adapter_path=None, max
         outputs = model.generate(
           **inputs,
           max_new_tokens=max_new_tokens,
-          temperature=temperature,
-          do_sample=True,
+          # temperature=temperature,
+          do_sample=False,
           pad_token_id=tokenizer.eos_token_id,
           eos_token_id=tokenizer.eos_token_id
         )
