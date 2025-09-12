@@ -22,6 +22,7 @@ import backoff
 from math_utils import is_math_correct
 import ratelimit
 import torch
+from tqdm import tqdm
 # import vertexai
 # from vertexai.generative_models import GenerationConfig
 # from vertexai.generative_models import GenerativeModel
