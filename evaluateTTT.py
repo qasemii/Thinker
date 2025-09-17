@@ -52,27 +52,21 @@ if __name__ == "__main__":
     base_model = f"meta-llama/{args.model}-Instruct"
   elif "gemma" in args.model:
     base_model = f"google/{args.model}-it"
-  elif "qwen2.5" in args.model:
-    base_model = f"Qwen/{args.model}-Instruct"
   elif args.model == 'olmo-2-1b':
     base_model = 'allenai/OLMo-2-0425-1B-Instruct'
-  elif args.model == 'olmo-7b':
-    base_model = 'allenai/OLMo-7B-Instruct'
-  elif args.model == 'qwen-2.5-7b':
-    base_model = 'Qwen/Qwen2.5-7B-Instruct'
-  elif args.model == 'qwen-3-4b':
-    base_model = 'Qwen/Qwen3-4B-Instruct-2507'
+  elif args.model == 'olmo-2-7b':
+    base_model = 'allenai/OLMo-2-1124-7B-Instruct'
   else:
     raise ValueError(f"Unsupported model: {args.model}")
 
   if args.task == "BoolQ":
     adapter_path = f"./checkpoints/{args.model}_SQA_{args.n}"
-  elif args.task == "OBQA":
+  elif args.task in ["OBQA", "MCGSM8K"]:
     adapter_path = f"./checkpoints/{args.model}_ARC_{args.n}"
   elif args.task == "ESNLI":
     adapter_path = f"./checkpoints/{args.model}_ANLI_{args.n}"
   elif args.task == "GSM8K-Rev":
-    adapter_path = f"./checkpoints/{args.model}_GSM8K_{args.n}"
+    adapter_path = f"./checkpoints/{args.model}_MCGSM8K_{args.n}"
   else:
     adapter_path = f"./checkpoints/{args.model}_{args.task}_{args.n}"
 
@@ -87,7 +81,8 @@ if __name__ == "__main__":
 
   with open(f"./data/test_data/{args.task}_test.json", "r") as f:
   # with open(f"./data/test_data_reordered/ARC_test_reordered.json", "r") as f:
-  # with open(f"./data/mmlu/anatomy.json", "r") as f:
+  # with open(f"./data/test_data_n_false/ARC_test_2_false.json", "r") as f:
+  # with open(f"./data/mmlu/abstract_algebra.json", "r") as f:
     test_samples = json.load(f)
 
   # Use unified chat template approach
