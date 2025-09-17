@@ -104,14 +104,10 @@ if __name__ == '__main__':
     base_model = f"meta-llama/{args.model}-Instruct"
   elif "gemma" in args.model:
     base_model = f"google/{args.model}-it"
-  elif "qwen2.5" in args.model:
-    base_model = f"Qwen/{args.model}-Instruct"
   elif args.model == 'olmo-2-1b':
     base_model = 'allenai/OLMo-2-0425-1B-Instruct'
-  elif args.model == 'qwen-2.5-7b':
-    base_model = 'Qwen/Qwen2.5-7B-Instruct'
-  elif args.model == 'qwen-3-4b':
-    base_model = 'Qwen/Qwen3-4B-Instruct-2507'
+  elif args.model == 'olmo-2-7b':
+    base_model = 'allenai/OLMo-2-1124-7B-Instruct'
   else:
     raise ValueError(f"Unsupported model: {args.model}")
 
